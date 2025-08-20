@@ -27,8 +27,17 @@ const QuizResults = ({ results, opponent, walletAddress, onPlayAgain, onViewLead
 
   const playerCorrectAnswers = results.playerAnswers.filter(a => a.correct).length;
   const opponentCorrectAnswers = results.opponentAnswers.filter(a => a.correct).length;
-  const averageResponseTime = results.playerAnswers.reduce((acc, a) => acc + a.timeSeconds, 0) / results.playerAnswers.length;
+  const averageResponseTime = results.averageResponseTime || results.playerAnswers.reduce((acc, a) => acc + a.timeSeconds, 0) / results.playerAnswers.length;
   const fastestAnswer = Math.min(...results.playerAnswers.map(a => a.timeSeconds));
+  const maxStreak = Math.max(...results.playerAnswers.reduce((streaks, answer, index) => {
+    if (answer.correct) {
+      const lastStreak = streaks[streaks.length - 1] || 0;
+      streaks[streaks.length - 1] = lastStreak + 1;
+    } else {
+      streaks.push(0);
+    }
+    return streaks;
+  }, [] as number[]));
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,7 +146,7 @@ const QuizResults = ({ results, opponent, walletAddress, onPlayAgain, onViewLead
         </Card>
 
         {/* Stats */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-5 gap-6 mb-8 max-w-5xl mx-auto">
           <Card className="bg-card border-card-border">
             <CardContent className="p-6 text-center">
               <Target className="w-8 h-8 text-primary mx-auto mb-3" />
@@ -170,6 +179,16 @@ const QuizResults = ({ results, opponent, walletAddress, onPlayAgain, onViewLead
 
           <Card className="bg-card border-card-border">
             <CardContent className="p-6 text-center">
+              <TrendingUp className="w-8 h-8 text-win mx-auto mb-3" />
+              <div className="text-2xl font-score font-bold text-foreground mb-1">
+                x{maxStreak}
+              </div>
+              <div className="text-sm text-muted">Max Streak</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-card-border">
+            <CardContent className="p-6 text-center">
               <Star className="w-8 h-8 text-primary mx-auto mb-3" />
               <div className="text-2xl font-score font-bold text-foreground mb-1">
                 +{results.isWinner ? 50 : 20}
@@ -179,6 +198,26 @@ const QuizResults = ({ results, opponent, walletAddress, onPlayAgain, onViewLead
           </Card>
         </div>
 
+        {/* Rank Delta Preview */}
+        <Card className="bg-card border-card-border mb-8 max-w-md mx-auto">
+          <CardContent className="p-6 text-center">
+            <h3 className="font-heading font-bold text-foreground mb-3 flex items-center justify-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Rank Change
+            </h3>
+            <div className="flex items-center justify-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-score font-bold text-win">+12</div>
+                <div className="text-xs text-muted">Rank Points</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-score font-bold text-accent">#1,247</div>
+                <div className="text-xs text-muted">New Rank</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Question by Question */}
         <Card className="bg-card border-card-border mb-8 max-w-4xl mx-auto">
           <CardContent className="p-6">
@@ -187,34 +226,51 @@ const QuizResults = ({ results, opponent, walletAddress, onPlayAgain, onViewLead
               Question Breakdown
             </h3>
             <div className="space-y-3">
-              {results.playerAnswers.map((answer, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-card/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-semibold">
-                      {index + 1}
+              {results.playerAnswers.map((answer, index) => {
+                const opponentAnswer = results.opponentAnswers[index];
+                const playerFaster = answer.timeSeconds < (opponentAnswer?.timeSeconds || 0);
+                const points = answer.correct ? Math.max(5, 15 - Math.floor(answer.timeSeconds)) : 0;
+                const speedBonus = answer.correct && answer.timeSeconds < 3 ? Math.max(0, 5 - Math.floor(answer.timeSeconds)) : 0;
+                
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-card/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-semibold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className={`text-sm font-semibold ${answer.correct ? 'text-win' : 'text-red-400'}`}>
+                          {answer.correct ? 'Correct' : 'Incorrect'}
+                        </div>
+                        <div className="text-xs text-muted flex items-center gap-2">
+                          {answer.timeSeconds.toFixed(1)}s
+                          {playerFaster && answer.correct && (
+                            <Zap className="h-3 w-3 text-win" />
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className={`text-sm font-semibold ${answer.correct ? 'text-win' : 'text-red-400'}`}>
-                        {answer.correct ? 'Correct' : 'Incorrect'}
-                      </div>
-                      <div className="text-xs text-muted">
-                        {answer.timeSeconds.toFixed(1)}s
-                      </div>
+                    <div className="flex items-center gap-2">
+                      {answer.correct ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge variant="outline" className="text-win border-win/20 bg-win/10">
+                            +{points}
+                          </Badge>
+                          {speedBonus > 0 && (
+                            <Badge variant="outline" className="text-win border-win/20 bg-win/10 text-xs">
+                              +{speedBonus} speed
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-red-400 border-red-400/20 bg-red-400/10">
+                          +0
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {answer.correct ? (
-                      <Badge variant="outline" className="text-win border-win/20 bg-win/10">
-                        +{Math.max(5, 15 - Math.floor(answer.timeSeconds))}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-red-400 border-red-400/20 bg-red-400/10">
-                        +0
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

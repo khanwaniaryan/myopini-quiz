@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import WalletConnect from "@/components/WalletConnect";
 import QuizSelection, { QuizConfig } from "@/components/QuizSelection";
 import Matchmaking, { Opponent } from "@/components/Matchmaking";
 import QuizGameplay, { QuizResults } from "@/components/QuizGameplay";
 import QuizResultsComponent from "@/components/QuizResults";
-import { Trophy, Zap, Users, Brain, Star, Award } from "lucide-react";
+import { Trophy, Zap, Users, Brain, Star, Award, BarChart3, User, History, Wallet } from "lucide-react";
 
 type GameState = "landing" | "connecting" | "quiz-selection" | "matchmaking" | "quiz" | "results" | "leaderboard";
 
@@ -22,7 +23,7 @@ const Index = () => {
   const handleWalletConnect = (address: string) => {
     setWalletAddress(address);
     setShowWalletConnect(false);
-    setGameState("quiz-selection");
+    // setGameState("quiz-selection");
   };
 
   const handleStartMatchmaking = (config: QuizConfig) => {
@@ -136,10 +137,56 @@ const Index = () => {
             </div>
             <h2 className="text-xl font-heading font-bold text-foreground">CryptoQuiz</h2>
           </div>
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            <span className="w-2 h-2 bg-win rounded-full mr-2 animate-pulse" />
-            DEMO MODE
-          </Badge>
+          
+          <div className="flex items-center gap-4">
+            <nav className="hidden md:flex items-center gap-4">
+              <Link to="/leaderboard">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Leaderboard
+                </Button>
+              </Link>
+              <Link to="/history">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  History
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Profile
+                </Button>
+              </Link>
+            </nav>
+            
+            {walletAddress ? (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs px-3 py-1">
+                  <span className="w-2 h-2 bg-win rounded-full mr-2 animate-pulse" />
+                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                </Badge>
+              </div>
+            ) : 
+            (
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowWalletConnect(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Connect Wallet
+                </Button>
+                <Badge variant="outline" className="text-xs px-3 py-1">
+                  <span className="w-2 h-2 bg-win rounded-full mr-2 animate-pulse" />
+                  DEMO MODE
+                </Badge>
+              </div>
+            )
+            }
+          </div>
         </header>
 
         {/* Hero Section */}
@@ -157,19 +204,71 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up" style={{ animationDelay: "0.3s" }}>
-            <Button 
-              variant="hero" 
-              size="xl" 
-              onClick={() => setShowWalletConnect(true)}
-              className="min-w-64"
-            >
-              <Zap className="h-5 w-5 mr-2" />
-              Connect Wallet (Demo)
-            </Button>
-            <Button variant="outline" size="xl" className="min-w-48">
-              <Trophy className="h-5 w-5 mr-2" />
-              Explore Leaderboard
-            </Button>
+            {!walletAddress ? (
+              <Button 
+                variant="hero" 
+                size="xl" 
+                onClick={() => setShowWalletConnect(true)}
+                className="min-w-64"
+              >
+                <Zap className="h-5 w-5 mr-2" />
+                Connect Wallet (Demo)
+              </Button>
+            ) : (
+              <Button 
+                variant="hero" 
+                size="xl" 
+                onClick={() => setGameState("quiz-selection")}
+                className="min-w-64"
+              >
+                <Zap className="h-5 w-5 mr-2" />
+                Start Playing
+              </Button>
+            )}
+            <Link to="/leaderboard">
+              <Button variant="outline" size="xl" className="min-w-48">
+                <Trophy className="h-5 w-5 mr-2" />
+                Explore Leaderboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Quick Access */}
+        <div className="text-center mb-16">
+          <h3 className="text-xl font-heading font-semibold text-foreground mb-6">
+            Explore the Platform
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <Link to="/leaderboard">
+              <Card className="bg-card border-card-border hover:border-primary/50 transition-all duration-300 hover:scale-105 cursor-pointer h-full">
+                <CardContent className="p-6 text-center">
+                  <BarChart3 className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <h4 className="font-semibold text-foreground mb-2">Leaderboard</h4>
+                  <p className="text-sm text-muted">View global rankings and top players</p>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link to="/history">
+              <Card className="bg-card border-card-border hover:border-primary/50 transition-all duration-300 hover:scale-105 cursor-pointer h-full">
+                <CardContent className="p-6 text-center">
+                  <History className="h-8 w-8 text-accent mx-auto mb-3" />
+                  <h4 className="font-semibold text-foreground mb-2">Match History</h4>
+                  <p className="text-sm text-muted">Review your past battles and performance</p>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            <Link to="/profile">
+              <Card className="bg-card border-card-border hover:border-primary/50 transition-all duration-300 hover:scale-105 cursor-pointer h-full">
+                <CardContent className="p-6 text-center">
+                  <User className="h-8 w-8 text-win mx-auto mb-3" />
+                  <h4 className="font-semibold text-foreground mb-2">Profile</h4>
+                  <p className="text-sm text-muted">Check your stats, achievements, and settings</p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
 
